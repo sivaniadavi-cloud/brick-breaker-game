@@ -1,3 +1,4 @@
+
 from cmu_graphics import *
 import random
 
@@ -7,7 +8,7 @@ class Ball:
         self.cy = cy
         self.dx = dx
         self.dy = dy
-        self.r = r  # Fixed to use the passed radius parameter
+        self.r = 10
         
     def move(self, app):
         self.cx += self.dx
@@ -70,9 +71,9 @@ class Brick:
             if random.random() < 0.2:
                 powerType = random.choice(['Wide', 'Life'])
                 app.powerUps.append(PowerUp(self.left + self.width//2,
-                                            self.top + self.height//2, powerType))
+                                            self.top + self.height/2, powerType))
     
-            spawnParticles(app, self.left+self.width//2, self.top+self.height//2, self.color)
+            spawnParticles(app, self.left+self.width/2, self.top+self.height/2, self.color)
         
     def draw(self):
         if not self.isBroken:
@@ -95,13 +96,13 @@ class StrongBrick(Brick):
                 self.isBroken = True
                 app.bricksRemaining -= 1
                 app.counter += 5
-                spawnParticles(app, self.left+self.width//2, self.top+self.height//2, 'white')
+                spawnParticles(app, self.left+self.width/2, self.top+self.height/2, 'white')
             
     def draw(self):
         if not self.isBroken:
             super().draw()
-            drawLabel(self.hitsLeft, self.left + self.width//2, 
-                      self.top + self.height//2, fill='white', bold=True)
+            drawLabel(self.hitsLeft, self.left + self.width/2, 
+                      self.top + self.height/2, fill='white', bold=True)
 
 class PowerUp:
     def __init__(self, cx, cy, type):
@@ -133,8 +134,9 @@ class Particle:
         self.life -= 1
     
     def draw(self):
-        drawRect(self.cx, self.cy, 4, 4, fill=self.color, opacity=max(0, min(100, self.life*5)))
+        drawRect(self.cx, self.cy, 4, 4, fill=self.color, opacity=self.life*5)
 
+# Button class adapted from lecture
 class Button:
     def __init__(self, left, top, width, height, color, text, onClickFn):
         self.left = left
@@ -263,7 +265,7 @@ def keys_redrawAll(app):
     
     for i in range(len(instructions)):
         drawLabel(instructions[i], app.width//2, 150 + (i*30), size=12, bold=True)
-    app.backButton.draw()
+        app.backButton.draw()
         
 def keys_onMousePress(app, mouseX, mouseY):
     app.backButton.handleClick(mouseX, mouseY)
@@ -304,7 +306,7 @@ def game_redrawAll(app):
         color = getBackgroundColor(app)
         drawRect(0, 0, app.width, app.height, fill=color, opacity=50)
         drawBoard(app)
-        drawLabel(app.counter, app.width//2, app.height//2, size=100, opacity=60, bold=True)
+        drawLabel(app.counter, app.width//2, app.height//2, size=100, opacity=60, font='montserrat', bold=True)
         drawRect(app.rectX, app.rectY, app.rectWidth, app.rectHeight)
         drawLabel(f'High Score: {max(app.scores)}', app.width//2, app.height*0.75//2, size=15)
         if app.tooManyBalls:
@@ -325,9 +327,9 @@ def game_redrawAll(app):
         
     else:
         drawRect(0, 0, app.width, app.height, fill='black', opacity=50)
-        drawLabel(f'Score: {app.counter}', app.width//2, app.height * 0.5//2, size=30, bold=True, fill='white')
-        drawLabel('GAME OVER', app.width//2, app.height//2, size=40, fill='red', bold=True)
-        drawLabel('Press r to reset', app.width//2, app.height * 0.75, size=20, fill='white', bold=True)
+        drawLabel(f'Score: {app.counter}', app.width//2, app.height * 0.5//2, size=30, bold=True, fill='white', font='montserrat')
+        drawLabel('GAME OVER', app.width//2, app.height//2, size=40, fill='red', font='montserrat', bold=True)
+        drawLabel('Press r to reset', app.width//2, app.height * 0.75, size=20, fill='white', font='montserrat', bold=True)
 
 def game_onScreenActivate(app):
     resetApp(app)
@@ -367,6 +369,7 @@ def game_onKeyHold(app, keys):
 
 def game_onStep(app):
     if not app.paused and not app.gameOver:
+        # move the balls
         for ball in list(app.balls):
             ball.move(app)
             ball.brickCollision(app)
@@ -374,6 +377,7 @@ def game_onStep(app):
                 app.balls.remove(ball)
                 app.counter -= 1
                 app.tooManyBalls = False
+        # losing lives logic
         if len(app.balls) == 0:
             app.lives -= 1
             if app.lives > 0:
@@ -386,10 +390,12 @@ def game_onStep(app):
                 if app.counter < 0:
                     app.counter = 0
                 app.scores.add(app.counter)
+        # power up catching
         for p in list(app.powerUps):
             p.move()
             if ((app.rectX <= p.cx <= app.rectX + app.rectWidth) and
                 app.rectY <= p.cy + p.r <= app.rectY + app.rectHeight):
+                
                 if p.type == 'Wide':
                     app.rectWidth += 20
                 elif p.type == 'Life':
@@ -397,10 +403,12 @@ def game_onStep(app):
                 app.powerUps.remove(p)
             elif p.cy > app.height:
                 app.powerUps.remove(p)
+        # update particles
         for part in list(app.particles):
             part.move()
             if part.life <= 0: 
                 app.particles.remove(part)
+    # game over logic
     if app.bricksRemaining == 0:
         app.win = True
         app.paused = True
@@ -410,6 +418,13 @@ def drawBoard(app):
         for col in range(app.cols):
             brick = app.board[row][col]
             brick.draw()
+
+def drawCell(app, row, col, color):
+    cellLeft, cellTop = getCellLeftTop(app, row, col)
+    cellWidth, cellHeight = getCellSize(app)
+    drawRect(cellLeft, cellTop, cellWidth, cellHeight,
+             fill=color, border='black',
+             borderWidth=app.cellBorderWidth)
 
 def getCellLeftTop(app, row, col):
     cellWidth, cellHeight = getCellSize(app)
