@@ -28,6 +28,8 @@ A feature-rich, object-oriented Brick Breaker game built in Python using the `cm
    git clone [https://github.com/sivaniadavi-cloud/brick-breaker-game.git](https://github.com/sivaniadavi-cloud/brick-breaker-game.git)
    cd brick-breaker-game
 2. Install the dependencies:
-    pip install -r requirements.txt
-3. Run the application:
+   ```bash
+   pip install -r requirements.txt
+4. Run the application:
+   ```bash
     python main.py
